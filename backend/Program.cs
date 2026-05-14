@@ -1,41 +1,67 @@
+using Backend.Data;
+using Backend.Services;
+using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
+
+// QuestPDF Community License (free for revenue < $1M)
+QuestPDF.Settings.License = LicenseType.Community;
+
+// Load .env file into environment variables
+DotNetEnv.Env.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// --- DATABASE (reads from .env) ---
+var connectionString = $"Host={Env("DB_HOST")};Port={Env("DB_PORT")};Database={Env("DB_NAME")};Username={Env("DB_USER")};Password={Env("DB_PASSWORD")}";
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// --- GEMINI CONFIG (reads from .env) ---
+builder.Configuration["Gemini:ApiKey"] = Env("GEMINI_API_KEY");
+builder.Configuration["Gemini:Model"] = builder.Configuration["Gemini:Model"] ?? "gemini-2.0-flash";
+
+// --- SERVICES ---
+builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+builder.Services.AddScoped<IQuotationService, QuotationService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
+
+// --- CONTROLLERS + SWAGGER ---
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+// --- CORS (allow Next.js frontend) ---
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --- MIDDLEWARE PIPELINE ---
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
+app.MapControllers();
 
-var summaries = new[]
+// --- AUTO-MIGRATE DATABASE ON STARTUP ---
+using (var scope = app.Services.CreateScope())
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+// Helper to read environment variables with a clear error
+static string Env(string key) =>
+    Environment.GetEnvironmentVariable(key)
+    ?? throw new InvalidOperationException($"Environment variable '{key}' is not set. Check your .env file.");
