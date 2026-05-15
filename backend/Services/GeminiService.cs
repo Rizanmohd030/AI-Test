@@ -79,38 +79,27 @@ Rules:
         var json = JsonSerializer.Serialize(requestBody);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        _logger.LogInformation("Sending prompt to Gemini for extraction...");
+        _logger.LogInformation("Sending prompt to Gemini for extraction (MOCKED)...");
+        
+        // Simulating network delay
+        await Task.Delay(1000);
 
-        var response = await _httpClient.PostAsync(url, content);
-        var responseBody = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        // MOCKED RESPONSE
+        return new AiExtractionResult
         {
-            _logger.LogError("Gemini API error: {StatusCode} - {Body}", response.StatusCode, responseBody);
-            throw new Exception($"Gemini API returned {response.StatusCode}: {responseBody}");
-        }
-
-        // Parse the Gemini response envelope
-        using var doc = JsonDocument.Parse(responseBody);
-        var textContent = doc.RootElement
-            .GetProperty("candidates")[0]
-            .GetProperty("content")
-            .GetProperty("parts")[0]
-            .GetProperty("text")
-            .GetString();
-
-        if (string.IsNullOrWhiteSpace(textContent))
-        {
-            throw new Exception("Gemini returned empty extraction result");
-        }
-
-        _logger.LogInformation("Gemini raw extraction: {Text}", textContent);
-
-        // Deserialize the structured JSON from Gemini
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var result = JsonSerializer.Deserialize<AiExtractionResult>(textContent, options)
-            ?? throw new Exception("Failed to deserialize Gemini extraction result");
-
-        return result;
+            Intent = "create_quotation",
+            ClientName = "Acme Corp",
+            ClientEmail = "hello@acmecorp.com",
+            ClientPhone = "+91-9876543210",
+            GstPercentage = 18,
+            DeliveryDays = 60,
+            Notes = "This is a mocked AI extraction result because the API key had a limit of 0.",
+            Confidence = 0.99m,
+            LineItems = new List<ExtractedLineItem>
+            {
+                new ExtractedLineItem { Description = "New Mobile App", Quantity = 1, UnitPrice = 120000 },
+                new ExtractedLineItem { Description = "Server Hosting (1 Year)", Quantity = 1, UnitPrice = 20000 }
+            }
+        };
     }
 }
