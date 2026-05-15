@@ -9,25 +9,25 @@ namespace Backend.Controllers;
 [Route("api/[controller]")]
 public class QuotationController : ControllerBase
 {
-    private readonly IGeminiService _geminiService;
+    private readonly IGroqService _groqService;
     private readonly IQuotationService _quotationService;
     private readonly IPdfService _pdfService;
     private readonly ILogger<QuotationController> _logger;
 
     public QuotationController(
-        IGeminiService geminiService,
+        IGroqService groqService,
         IQuotationService quotationService,
         IPdfService pdfService,
         ILogger<QuotationController> logger)
     {
-        _geminiService = geminiService;
+        _groqService = groqService;
         _quotationService = quotationService;
         _pdfService = pdfService;
         _logger = logger;
     }
 
     /// <summary>
-    /// Step 1: AI Extraction — Send a natural language prompt to Gemini.
+    /// Step 1: AI Extraction — Send a natural language prompt to Groq.
     /// Returns structured data for the user to review/edit (human-in-the-loop).
     /// </summary>
     [HttpPost("extract")]
@@ -38,7 +38,7 @@ public class QuotationController : ControllerBase
 
         try
         {
-            var result = await _geminiService.ExtractQuotationDataAsync(request.Prompt);
+            var result = await _groqService.ExtractQuotationDataAsync(request.Prompt);
             return Ok(result);
         }
         catch (Exception ex)

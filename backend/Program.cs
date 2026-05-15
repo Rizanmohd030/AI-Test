@@ -16,12 +16,11 @@ var connectionString = $"Host={Env("DB_HOST")};Port={Env("DB_PORT")};Database={E
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// --- GEMINI CONFIG (reads from .env) ---
-builder.Configuration["Gemini:ApiKey"] = Env("GEMINI_API_KEY");
-builder.Configuration["Gemini:Model"] = builder.Configuration["Gemini:Model"] ?? "gemini-2.0-flash";
+// --- GROQ AI CONFIG (API key rotation system) ---
+builder.Services.AddSingleton<IKeyRotationService, KeyRotationService>();
 
 // --- SERVICES ---
-builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+builder.Services.AddHttpClient<IGroqService, GroqService>();
 builder.Services.AddScoped<IQuotationService, QuotationService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 
