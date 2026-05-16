@@ -55,16 +55,20 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 /warnaserror+:NU1605,SYSLIB0011
 
 [sourceFiles]
-Controllers/QuotationController.cs
+Controllers/
+ ClientsController.cs
+ QuotationController.cs
 Data/AppDbContext.cs
 DTOs/
  AiExtractionDtos.cs
+ ClientDtos.cs
  QuotationDtos.cs
 Migrations/
  20260514181404_InitialCreate.cs
  20260514181404_InitialCreate.Designer.cs
  AppDbContextModelSnapshot.cs
 Models/
+ Client.cs
  Quotation.cs
  QuotationLineItem.cs
 obj/Debug/net10.0/
@@ -73,6 +77,7 @@ obj/Debug/net10.0/
  Backend.GlobalUsings.g.cs
 Program.cs
 Services/
+ ClientService.cs
  GroqService.cs
  KeyRotationService.cs
  PdfService.cs

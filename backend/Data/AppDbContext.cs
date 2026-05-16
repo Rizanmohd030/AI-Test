@@ -7,6 +7,7 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    public DbSet<Client> Clients => Set<Client>();
     public DbSet<Quotation> Quotations => Set<Quotation>();
     public DbSet<QuotationLineItem> QuotationLineItems => Set<QuotationLineItem>();
 
@@ -14,10 +15,29 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Client>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(c => c.Email).HasMaxLength(200);
+            entity.Property(c => c.Phone).HasMaxLength(20);
+            entity.Property(c => c.Notes).HasColumnType("text");
+
+            entity.HasIndex(c => c.Name);
+            entity.HasIndex(c => c.Email);
+            entity.HasIndex(c => c.Phone);
+        });
+
         // Quotation configuration
         modelBuilder.Entity<Quotation>(entity =>
         {
             entity.HasKey(q => q.Id);
+
+            entity.Property(q => q.ClientId).IsRequired(false);
 
             entity.Property(q => q.QuotationNumber)
                 .IsRequired()
@@ -41,6 +61,11 @@ public class AppDbContext : DbContext
             entity.Property(q => q.Status)
                 .HasConversion<string>()
                 .HasMaxLength(20);
+
+            entity.HasOne(q => q.Client)
+                .WithMany(c => c.Quotations)
+                .HasForeignKey(q => q.ClientId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasMany(q => q.LineItems)
                 .WithOne(li => li.Quotation)

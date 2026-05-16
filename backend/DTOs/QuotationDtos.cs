@@ -24,6 +24,7 @@ public class LineItemDto
 public class QuotationResponse
 {
     public int Id { get; set; }
+    public int? ClientId { get; set; }
     public string QuotationNumber { get; set; } = string.Empty;
     public string ClientName { get; set; } = string.Empty;
     public string? ClientEmail { get; set; }

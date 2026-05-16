@@ -16,11 +16,13 @@ public interface IQuotationService
 public class QuotationService : IQuotationService
 {
     private readonly AppDbContext _db;
+    private readonly IClientService _clientService;
     private readonly ILogger<QuotationService> _logger;
 
-    public QuotationService(AppDbContext db, ILogger<QuotationService> logger)
+    public QuotationService(AppDbContext db, IClientService clientService, ILogger<QuotationService> logger)
     {
         _db = db;
+        _clientService = clientService;
         _logger = logger;
     }
 
@@ -55,6 +57,11 @@ public class QuotationService : IQuotationService
 
         // --- QUOTATION NUMBER GENERATION ---
         var quotationNumber = await GenerateQuotationNumberAsync();
+        var client = await _clientService.UpsertClientAsync(
+            dto.ClientName,
+            dto.ClientEmail,
+            dto.ClientPhone,
+            dto.Notes);
 
         // --- CALCULATIONS (backend is the authority) ---
         var lineItems = dto.LineItems.Select(li => new QuotationLineItem
@@ -73,6 +80,7 @@ public class QuotationService : IQuotationService
         // --- PERSISTENCE ---
         var quotation = new Quotation
         {
+            ClientId = client.Id,
             QuotationNumber = quotationNumber,
             ClientName = dto.ClientName.Trim(),
             ClientEmail = dto.ClientEmail?.Trim(),
@@ -165,6 +173,7 @@ public class QuotationService : IQuotationService
     private static QuotationResponse MapToResponse(Quotation q) => new()
     {
         Id = q.Id,
+        ClientId = q.ClientId,
         QuotationNumber = q.QuotationNumber,
         ClientName = q.ClientName,
         ClientEmail = q.ClientEmail,

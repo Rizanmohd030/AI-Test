@@ -21,6 +21,7 @@ builder.Services.AddSingleton<IKeyRotationService, KeyRotationService>();
 
 // --- SERVICES ---
 builder.Services.AddHttpClient<IGroqService, GroqService>();
+builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IQuotationService, QuotationService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 

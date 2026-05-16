@@ -12,6 +12,8 @@ public class Quotation
 {
     public int Id { get; set; }
 
+    public int? ClientId { get; set; }
+
     /// <summary>Auto-generated quotation number like QTN-2026-0001</summary>
     public string QuotationNumber { get; set; } = string.Empty;
 
@@ -42,6 +44,8 @@ public class Quotation
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public Client? Client { get; set; }
 
     // Navigation property
     public List<QuotationLineItem> LineItems { get; set; } = new();
