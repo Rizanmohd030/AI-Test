@@ -9,26 +9,43 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [createdQuotation, setCreatedQuotation] = useState(null);
+  const [clientResponse, setClientResponse] = useState(null);
 
-  const handleExtract = async () => {
+  const handleUnifiedPrompt = async () => {
     if (!prompt.trim()) return;
     setLoading(true);
     setError(null);
     setExtractedData(null);
     setCreatedQuotation(null);
+    setClientResponse(null);
 
     try {
-      const res = await fetch("http://localhost:5158/api/quotation/extract", {
+      // Step 1: Hit the Client Prompt endpoint which now acts as our master router
+      const res = await fetch("http://localhost:5158/api/clients/prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to extract data");
+      if (!res.ok) throw new Error(data.error || "Failed to process prompt");
 
-      // Adding OriginalPrompt since we need it for the next step
-      setExtractedData({ ...data, originalPrompt: prompt });
+      if (data.intent === "create_quotation") {
+        // Step 2: If the AI thinks this is a quotation, hit the extraction endpoint
+        const extractRes = await fetch("http://localhost:5158/api/quotation/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+
+        const extractData = await extractRes.json();
+        if (!extractRes.ok) throw new Error(extractData.error || "Failed to extract quotation data");
+        
+        setExtractedData({ ...extractData, originalPrompt: prompt });
+      } else {
+        // Step 3: Otherwise, it's a client command (Create/Update/Search/List/Delete)
+        setClientResponse(data);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -98,25 +115,70 @@ export default function Home() {
       
       {!createdQuotation && (
         <div className={styles.card}>
-          <label className={styles.promptLabel}>Describe your quotation requirements</label>
-          <span className={styles.promptExample}>"Create a quotation for ABC Corp for website redesign worth ₹50,000 with 18% GST and delivery in 30 days."</span>
+          <label className={styles.promptLabel}>What would you like to do?</label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginBottom: "15px", opacity: 0.8, fontSize: "0.85rem" }}>
+            <span>💡 "Create a quotation for ABC Corp for website redesign worth ₹50,000"</span>
+            <span>💡 "Show me all clients" or "Create client Jane Doe (jane@doe.com)"</span>
+          </div>
           <textarea
             className={styles.textarea}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Type your prompt here..."
+            placeholder="Type your command (quotation or client management)..."
           />
           <button
             className={styles.button}
-            onClick={handleExtract}
+            onClick={handleUnifiedPrompt}
             disabled={loading || !prompt}
           >
-            {loading ? "Processing..." : "✨ Extract Data with AI"}
+            {loading ? "Processing..." : "✨ Execute with AI"}
           </button>
         </div>
       )}
 
       {error && <div className={styles.error}><strong>Error:</strong> {error}</div>}
+
+      {/* Client Result UI (Unified) */}
+      {clientResponse && (
+        <div className={styles.card} style={{ borderLeft: "4px solid #0070f3" }}>
+          <h2 className={styles.sectionTitle}>
+            <span style={{ textTransform: "uppercase", fontSize: "0.7rem", background: "#0070f3", color: "white", padding: "3px 8px", borderRadius: "4px", marginRight: "10px", verticalAlign: "middle" }}>
+              {clientResponse.intent}
+            </span>
+            {clientResponse.message}
+          </h2>
+
+          {clientResponse.client && (
+            <div style={{ marginTop: "15px", background: "rgba(0,0,0,0.05)", padding: "15px", borderRadius: "8px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <div><strong>Name:</strong> {clientResponse.client.name}</div>
+                <div><strong>Email:</strong> {clientResponse.client.email || "—"}</div>
+                <div><strong>Phone:</strong> {clientResponse.client.phone || "—"}</div>
+                <div><strong>Notes:</strong> {clientResponse.client.notes || "—"}</div>
+              </div>
+            </div>
+          )}
+
+          {clientResponse.clients && clientResponse.clients.length > 0 && (
+            <div style={{ marginTop: "15px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              {clientResponse.clients.map((c) => (
+                <div key={c.id} style={{ background: "rgba(0,0,0,0.02)", padding: "10px", borderRadius: "6px", border: "1px solid rgba(0,0,0,0.05)", display: "flex", justifyContent: "space-between" }}>
+                  <span><strong>{c.name}</strong> ({c.email || "No Email"})</span>
+                  <span style={{ opacity: 0.5 }}>ID: {c.id}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <button 
+            className={styles.button} 
+            style={{ marginTop: "20px", width: "fit-content", background: "transparent", border: "1px solid #ccc", color: "#666" }}
+            onClick={() => setClientResponse(null)}
+          >
+            Close Result
+          </button>
+        </div>
+      )}
 
       {/* Human Verification Step - Form UI */}
       {extractedData && !createdQuotation && (

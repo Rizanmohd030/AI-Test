@@ -66,6 +66,8 @@ DTOs/
 Migrations/
  20260514181404_InitialCreate.cs
  20260514181404_InitialCreate.Designer.cs
+ 20260516065640_AddClientTable.cs
+ 20260516065640_AddClientTable.Designer.cs
  AppDbContextModelSnapshot.cs
 Models/
  Client.cs

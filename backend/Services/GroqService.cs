@@ -96,7 +96,7 @@ Rules:
         var systemInstruction = @"You are a strict JSON parser for client CRUD commands in an ERP system.
 Return ONLY valid JSON with this shape:
 {
-  ""intent"": ""get_last_client|get_client|list_clients|create_client|update_client|delete_client"",
+  ""intent"": ""get_last_client|get_client|list_clients|create_client|update_client|delete_client|create_quotation"",
   ""clientId"": <number or null>,
   ""searchTerm"": ""<name/email/phone or null>"",
   ""name"": ""<client name or null>"",
@@ -112,6 +112,7 @@ Rules:
 - If the prompt asks to update/edit/modify a client, use update_client.
 - If the prompt asks to delete/remove a client, use delete_client.
 - If the prompt asks to find/search/fetch a client by name/email/phone/id, use get_client.
+- If the prompt asks to create, generate, or make a quotation/invoice/estimate, use create_quotation.
 - Prefer clientId when explicitly present; otherwise fill searchTerm.";
 
         var responseContent = await SendGroqPromptAsync(systemInstruction, prompt);
@@ -135,7 +136,8 @@ Rules:
                 new { role = "user", content = prompt }
             },
             temperature = 0.1,
-            max_tokens = 1024
+            max_tokens = 1024,
+            response_format = new { type = "json_object" }
         };
 
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions")
@@ -178,13 +180,17 @@ Rules:
 
     private static string NormalizeJson(string textContent)
     {
-        textContent = textContent.Trim();
-        if (textContent.StartsWith("```json"))
-            textContent = textContent.Substring(7);
-        if (textContent.StartsWith("```"))
-            textContent = textContent.Substring(3);
-        if (textContent.EndsWith("```"))
-            textContent = textContent.Substring(0, textContent.Length - 3);
+        if (string.IsNullOrWhiteSpace(textContent)) return "{}";
+
+        // Find the first '{' and the last '}'
+        int start = textContent.IndexOf('{');
+        int end = textContent.LastIndexOf('}');
+
+        if (start != -1 && end != -1 && end > start)
+        {
+            return textContent.Substring(start, end - start + 1);
+        }
+
         return textContent.Trim();
     }
 

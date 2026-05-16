@@ -34,12 +34,25 @@ public class ClientPromptRequest
 
 public class ClientCommandAnalysis
 {
+    [System.Text.Json.Serialization.JsonPropertyName("intent")]
     public string Intent { get; set; } = string.Empty;
+
+    [System.Text.Json.Serialization.JsonPropertyName("clientId")]
     public int? ClientId { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("searchTerm")]
     public string? SearchTerm { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string? Name { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("email")]
     public string? Email { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("phone")]
     public string? Phone { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("notes")]
     public string? Notes { get; set; }
 }
 

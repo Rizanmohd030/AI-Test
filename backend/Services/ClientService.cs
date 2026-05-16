@@ -188,6 +188,7 @@ public class ClientService : IClientService
             "create_client" => await HandleCreateAsync(analysis),
             "update_client" => await HandleUpdateAsync(analysis),
             "delete_client" => await HandleDeleteAsync(analysis),
+            "create_quotation" => new ClientPromptResponse { Intent = "create_quotation", Message = "Redirecting to Quotation AI..." },
             _ => throw new InvalidOperationException($"Unsupported client intent: {analysis.Intent}")
         };
     }
@@ -295,7 +296,7 @@ public class ClientService : IClientService
         {
             Intent = "delete_client",
             Message = deleted ? "Client deleted." : "Client not found.",
-            Client = target
+            Client = Map(target)
         };
     }
 
